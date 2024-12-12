@@ -37,43 +37,29 @@ const maxRecurse = (...nums) => {
 const not = (func) => (arg) => (func(arg) === true ? false : true);
 
 const acc = (func, initial) => {
-  const accumulator = (...args) => {
+  return (...args) => {
     return args.reduce((acc, curr) => func(acc, curr), initial);
   };
-  return accumulator;
 };
-// !!!
-// const accPartial = (func, start, end) => {
-//   const accumulator = (...args) => {
-//     return args.reduce((acc, curr, index) => {
-//       if (index >= start && index <= end) func(acc, curr);
-//     }, 0);
-//   };
-//   return accumulator;
-// };
-// const accPartial = (func, start, end) => {
-//   const accumulator = (...args) => {
-//     // const neededArgs = [args[start]]
-//     return args.map((value, index) => {
-//       if (index >= start && index <= end) {
-//         return func(value)
-//       } else {
-//         return value;
-//       }
-//     });
-//   };
-//   return accumulator;
-// };
-// const addSecondToThird = accPartial(add, 1, 3);
-// console.log(addSecondToThird(1, 2, 4, 8)); // [ 1, 6, 8 ]
-// const accRecurse = (func, initial) => {
-//   const inner = (...args) => {
-//     if (args.length === 1) return args[0];
-//     const [first, ...rest] = args;
-//     return 
-//   };
-//   return inner;
-// };
+
+const accPartial = (func, start, end) => {
+  return (...args) => {
+    const result = [...args];
+    const subset = args.slice(start, end);
+    const accumulatedValue = func(...subset);
+    result.splice(start, subset.length, accumulatedValue);
+    return result;
+  }
+};
+const accRecurse = (func, initial) => {
+  const inner = (...args) => {
+    if (args.length === 0) return initial;
+    const [first, ...rest] = args;
+    const newInitial = func(initial, first);
+    return inner(...rest);
+  };
+  return inner;
+};
 
 const fill = (num) => Array(num).fill(num);
 const fillRecurse = (num) => {
@@ -150,6 +136,106 @@ const composeTwo = (func1, func2) => (...args) => {
 
 const compose = (...funcs) => (...args) => {};
 
+const limitb = (binary, lmt) => {
+  let count = 0;
+  return (a, b) => {
+    if (count < lmt) {
+      count += 1;
+      return binary(a, b);
+    }
+    return undefined;
+  };
+};
+
+const limit = (func, lmt) => {
+  let count = 0;
+  return (...args) => {
+    if (count < lmt) {
+      count += 1;
+      return func(...args);
+    }
+    return undefined;
+  };
+};
+
+const genFrom = (num) => {
+  let current = num;
+  return {
+    next: () => ({
+      value: current++,
+      done: false,
+    })
+  };
+};
+
+const genTo = (gen, lmt) => {
+  return {
+    next: () => {
+      const item = gen.next();
+      if (item.done || item.value >= lmt) {
+        return { done: true };
+      }
+      return item;
+    }
+  };
+};
+
+const genFromTo = (start, end) => {
+  let current = start;
+  return {
+    next: () => {
+      if (current < end) {
+        return { value: current++, done: false }
+      } else {
+        return { done: true }
+      }
+    }
+  };
+};
+
+const elementGen = (array, gen) => {
+  return {
+    next: () => {
+      const indexObj = gen.next();
+      if (indexObj.done || indexObj.value >= array.length) {
+        return { done: true };
+        
+      } else {
+        return { value: array[indexObj.value], done: false };
+      }
+    }
+  };
+};
+
+const element = (array, gen = null) => {
+  let index = 0;
+  return {
+    next: () => {
+      const genObj = gen ? gen.next() : { value: index++, done: false };
+      if (genObj.value >= array.length) {
+        return { done: true };
+      } else {
+        return { value: array[genObj.value], done: genObj.done };
+      }
+    }
+  };
+};
+
+const collect = (gen, array) => {
+  return {
+    next: () => {
+      const indexObj = gen.next();
+      if (indexObj.done) {
+        return { done: true };
+        
+      } else {
+        const value = indexObj.value;
+        array.push(value);
+        return { value, done: false };
+      }
+    }
+  };
+};
 
 module.exports = {
   identity,
@@ -169,8 +255,8 @@ module.exports = {
   maxRecurse,
   not,
   acc,
-//   accPartial,
-//   accRecurse,
+  accPartial,
+  accRecurse,
   fill,
   fillRecurse,
   set,
@@ -192,14 +278,14 @@ module.exports = {
   composeb,
   composeTwo,
   compose,
-//   limitb,
-//   limit,
-//   genFrom,
-//   genTo,
-//   genFromTo,
-//   elementGen,
-//   element,
-//   collect,
+  limitb,
+  limit,
+  genFrom,
+  genTo,
+  genFromTo,
+  elementGen,
+  element,
+  collect,
 //   filter,
 //   filterTail,
 //   concatTwo,
